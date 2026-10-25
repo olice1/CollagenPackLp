@@ -1,0 +1,21 @@
+{
+  "name": "AUREVA - Pack Articulations & Mobilité",
+  "short_name": "AUREVA",
+  "description": "روتين متكامل للمفاصل والعظام والحركة في المغرب - الدفع عند الاستلام",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f4c5c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
