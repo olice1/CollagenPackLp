@@ -1,55 +1,31 @@
 /**
  * ===================================================================
- * AUREVA — Google Apps Script for Google Sheets Order Management
+ * AUREVA — Google Sheet Order Receiver + Meta Conversions API (CAPI)
+ * Full COD Lifecycle Tracking: Lead ➔ Confirmed ➔ In Delivery ➔ Purchase (Sale) / Return
  * Sheet: "Collagen pack" (ID: 1NWTDQlS7zmmNQLUUn5toz1sryS4UwvEPWY7NyJXwA6A)
- * ===================================================================
- * 
- * 📋 3-STEP INSTALLATION GUIDE (Takes 1 Minute):
- * 
- * 1. Open your Google Sheet ("Collagen pack"):
- *    https://docs.google.com/spreadsheets/d/1NWTDQlS7zmmNQLUUn5toz1sryS4UwvEPWY7NyJXwA6A/edit
- * 
- * 2. In the top menu of Google Sheets, click:
- *    Extensions (الإضافات) > Apps Script
- * 
- * 3. Delete everything in the editor, PASTE THIS ENTIRE SCRIPT, then:
- *    - Click the blue "Deploy" (نشر) button in top-right > "New deployment" (توزيع جديد)
- *    - Click the gear icon ⚙️ next to "Select type" > choose "Web app" (تطبيق ويب)
- *    - Description: AUREVA Orders Receiver
- *    - Execute as (التنفيذ بتفويض من): Me (حسابي)
- *    - Who has access (من يملك حق الوصول): Anyone (أي شخص)  <-- VERY IMPORTANT!
- *    - Click "Deploy" (نشر) > "Authorize access" (منح حق الوصول) > Allow.
- *    - COPY the "Web app URL" (starts with https://script.google.com/macros/s/...)
- * 
- * 4. Paste that Web App URL into your js/config.js file under `googleSheet.webAppUrl`.
  * ===================================================================
  */
 
-// Configuration
 var META_PIXEL_ID = "2176488913254071";
 var META_CAPI_TOKEN = "EAAXhbW8hKh8BSZCYGupxh0Cz0YymrEKcquu6q3ufbrAqsGxmJH4HZBDdcwUPEVSaBmiK2NpsCp9A3pBExVr9SwOMbCZC4Fspeq4w1iu5yyiC6AAN28qmsB8yPr0WcHMZAF3IMpvjDzZC0iQZCYde65NcZAgWkzDq8r5plZAMEbKZCVRHlc4xhti5VOZBKYGuGxAyUyfwZDZD";
 
+/**
+ * 1. Handles New Orders Submitted from the Website (Fires 'Lead' event)
+ */
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.tryLock(15000);
 
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getActiveSheet();
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
-    // 1. Parse incoming order data (handles JSON, Form, and raw text)
     var data = {};
     if (e && e.postData && e.postData.contents) {
-      try {
-        data = JSON.parse(e.postData.contents);
-      } catch (err) {
-        data = e.parameter || {};
-      }
+      try { data = JSON.parse(e.postData.contents); } catch (err) { data = e.parameter || {}; }
     } else if (e && e.parameter) {
       data = e.parameter;
     }
 
-    // 2. Initialize Headers if sheet is blank
     var headers = [
       "رقم الطلب (Order ID)",
       "تاريخ الطلب (Date & Time)",
@@ -65,9 +41,10 @@ function doPost(e) {
       "المصدر (UTM Source)",
       "الحملة (UTM Campaign)",
       "معرّف الإعلان (fbclid)",
-      "ملاحظات (Notes)"
+      "ملاحظات وتتبع Meta (Meta Sync)"
     ];
 
+    // Create styled header row if empty
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(headers);
       var headerRange = sheet.getRange(1, 1, 1, headers.length);
@@ -80,82 +57,159 @@ function doPost(e) {
       sheet.setFrozenRows(1);
     }
 
-    // 3. Format Phone Number
     var rawPhone = String(data.phone || "").replace(/\s+/g, "");
-    var waDigits = rawPhone;
-    if (waDigits.indexOf("0") === 0) {
-      waDigits = "212" + waDigits.substring(1);
-    }
+    var waDigits = rawPhone.indexOf("0") === 0 ? "212" + rawPhone.substring(1) : rawPhone;
     var waUrl = "https://wa.me/" + waDigits;
-
-    // 4. Casablanca local timestamp
     var casablancaTime = Utilities.formatDate(new Date(), "Africa/Casablanca", "yyyy-MM-dd HH:mm:ss");
 
     var row = [
       data.order_id || ("AUR-" + Date.now().toString().slice(-6)),
       casablancaTime,
       data.customer_name || "",
-      "'" + rawPhone, // Apostrophe forces text format so leading 0 isn't stripped
+      "'" + rawPhone,
       data.city || "",
       data.delivery_address || "",
       data.quantity || 1,
       data.total_amount || 330,
       data.discount || 0,
-      data.status || "NEW",
+      "NEW",
       waUrl,
       data.utm_source || "",
       data.utm_campaign || "",
       data.fbclid || "",
-      data.contact_notes || ""
+      "Lead tracked via Website"
     ];
 
     sheet.appendRow(row);
 
-    // Format new row
     var lastRow = sheet.getLastRow();
-    sheet.getRange(lastRow, 1, 1, headers.length).setVerticalAlignment("middle");
-    sheet.getRange(lastRow, 4).setHorizontalAlignment("center"); // phone
-    sheet.getRange(lastRow, 7, 1, 3).setHorizontalAlignment("center"); // qty, total, discount
+    sheet.getRange(lastRow, 4).setHorizontalAlignment("center");
+    sheet.getRange(lastRow, 7, 1, 3).setHorizontalAlignment("center");
 
-    // 5. Send Server-Side Meta Conversions API (CAPI) Event
+    // Add Status dropdown validation to column J (Status)
+    setupStatusDropdown(sheet, lastRow);
+
+    // Track Meta CAPI 'Lead' event
     try {
-      sendMetaCAPILead(data, waDigits, casablancaTime);
+      sendMetaCAPIEvent("Lead", data, waDigits, Number(data.total_amount) || 330);
     } catch (capiErr) {
-      Logger.log("Meta CAPI Error: " + capiErr.toString());
+      Logger.log("Lead CAPI Error: " + capiErr.toString());
     }
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ result: "success", order_id: row[0], row: lastRow }))
-      .setMimeType(ContentService.MimeType.JSON);
-
+    return ContentService.createTextOutput(JSON.stringify({ result: "success" })).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
-    Logger.log("doPost Error: " + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({ result: "error", message: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ result: "error", message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
   }
 }
 
 /**
- * Health check when opening the Web App URL in a browser
+ * 2. AUTOMATIC STATUS CHANGE TRIGGER (onEdit)
+ * When you change Column J (الحالة) in Google Sheets:
+ * - If you select 'DELIVERED' ➔ Sends 'Purchase' to Meta CAPI!
+ * - If you select 'CONFIRMED' ➔ Sends 'Schedule' or confirms qualified lead!
  */
-function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({
-      status: "online",
-      message: "AUREVA Google Sheet Order Receiver is active and ready!",
-      sheetName: SpreadsheetApp.getActiveSpreadsheet().getName(),
-      timestamp: new Date().toISOString()
-    }))
-    .setMimeType(ContentService.MimeType.JSON);
+function onEdit(e) {
+  if (!e || !e.range) return;
+  var sheet = e.range.getSheet();
+  var row = e.range.getRow();
+  var col = e.range.getColumn();
+
+  // Only trigger when editing Column J (Column 10: الحالة / Status) on data rows
+  if (col !== 10 || row < 2) return;
+
+  var newStatus = String(e.value || "").toUpperCase().trim();
+  var notesCell = sheet.getRange(row, 15); // Column O: Notes
+  var existingNotes = String(notesCell.getValue() || "");
+
+  var orderId = sheet.getRange(row, 1).getValue();
+  var rawPhone = sheet.getRange(row, 4).getValue().toString().replace(/'/g, "").replace(/\s+/g, "");
+  var waDigits = rawPhone.indexOf("0") === 0 ? "212" + rawPhone.substring(1) : rawPhone;
+  var totalAmount = Number(sheet.getRange(row, 8).getValue()) || 330;
+  var clientName = sheet.getRange(row, 3).getValue();
+  var city = sheet.getRange(row, 5).getValue();
+  var casablancaTime = Utilities.formatDate(new Date(), "Africa/Casablanca", "yyyy-MM-dd HH:mm");
+
+  var orderData = {
+    order_id: orderId,
+    customer_name: clientName,
+    city: city
+  };
+
+  // Case A: Package is DELIVERED (Sale completed & cash collected)
+  if (newStatus === "DELIVERED" || newStatus === "LIVRE" || newStatus === "تم التسليم") {
+    if (existingNotes.indexOf("Purchase Sent") === -1) {
+      sendMetaCAPIEvent("Purchase", orderData, waDigits, totalAmount);
+      notesCell.setValue("✅ Meta Purchase Sent (" + totalAmount + " DH) at " + casablancaTime);
+      sheet.getRange(row, 10).setBackground("#dcfce7"); // light green
+    }
+  }
+
+  // Case B: Order is CONFIRMED with customer
+  else if (newStatus === "CONFIRMED" || newStatus === "مؤكد") {
+    if (existingNotes.indexOf("Confirmed Tracked") === -1) {
+      notesCell.setValue("📞 Confirmed at " + casablancaTime);
+      sheet.getRange(row, 10).setBackground("#e0f2fe"); // light blue
+    }
+  }
+
+  // Case C: Order is IN DELIVERY
+  else if (newStatus === "IN_DELIVERY" || newStatus === "قيد التوصيل" || newStatus === "EN LIVRAISON") {
+    sheet.getRange(row, 10).setBackground("#fef9c3"); // light yellow
+  }
+
+  // Case D: Order is RETURNED / CANCELLED
+  else if (newStatus === "RETURNED" || newStatus === "مرتجع" || newStatus === "CANCELLED" || newStatus === "ملغي") {
+    notesCell.setValue("❌ " + newStatus + " at " + casablancaTime);
+    sheet.getRange(row, 10).setBackground("#fee2e2"); // light red
+  }
 }
 
 /**
- * Server-Side Meta Conversions API (CAPI) Lead Dispatcher from Google Apps Script
+ * 3. Sets up a nice dropdown in Column J (الحالة / Status)
  */
-function sendMetaCAPILead(orderData, waPhone, timestamp) {
+function setupStatusDropdown(sheet, rowIndex) {
+  var rule = SpreadsheetApp.newDataValidation()
+    .requireValueInList([
+      "NEW",
+      "CONFIRMED",
+      "IN_DELIVERY",
+      "DELIVERED",
+      "CANCELLED",
+      "RETURNED"
+    ], true)
+    .setAllowInvalid(false)
+    .build();
+
+  sheet.getRange(rowIndex, 10).setDataValidation(rule);
+}
+
+/**
+ * 4. Custom Menu in Google Sheets: Run "Setup All Dropdowns" once to format existing rows
+ */
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu("🌿 AUREVA CRM")
+    .addItem("تفعيل القوائم المنسدلة لجميع الصفوف (Setup Dropdowns)", "formatAllStatusCells")
+    .addToUi();
+}
+
+function formatAllStatusCells() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    for (var r = 2; r <= lastRow; r++) {
+      setupStatusDropdown(sheet, r);
+    }
+  }
+  SpreadsheetApp.getUi().alert("تم تفعيل القائمة المنسدلة (NEW, CONFIRMED, IN_DELIVERY, DELIVERED, CANCELLED, RETURNED) بنجاح!");
+}
+
+/**
+ * 5. General Meta Conversions API (CAPI) Dispatcher
+ */
+function sendMetaCAPIEvent(eventName, orderData, waPhone, value) {
   if (!META_PIXEL_ID || !META_CAPI_TOKEN) return;
 
   var hashedPhone = sha256(waPhone);
@@ -164,12 +218,14 @@ function sendMetaCAPILead(orderData, waPhone, timestamp) {
   var city = (orderData.city || "").trim().toLowerCase();
   var hashedCity = city ? sha256(city) : undefined;
 
+  var eventId = eventName.toLowerCase() + "_" + (orderData.order_id || Date.now());
+
   var payload = {
     data: [
       {
-        event_name: "Lead",
+        event_name: eventName,
         event_time: Math.floor(Date.now() / 1000),
-        event_id: orderData.event_id || ("lead_" + (orderData.order_id || Date.now())),
+        event_id: eventId,
         event_source_url: "https://aur-eva.com/",
         action_source: "website",
         user_data: {
@@ -180,11 +236,9 @@ function sendMetaCAPILead(orderData, waPhone, timestamp) {
         },
         custom_data: {
           currency: "MAD",
-          value: Number(orderData.total_amount) || 330,
+          value: Number(value) || 330,
           content_name: "Pack Articulations & Mobilité",
-          content_type: "product",
-          order_id: orderData.order_id,
-          num_items: Number(orderData.quantity) || 1
+          order_id: orderData.order_id
         }
       }
     ]
@@ -201,19 +255,18 @@ function sendMetaCAPILead(orderData, waPhone, timestamp) {
   UrlFetchApp.fetch(apiUrl, options);
 }
 
-/**
- * Helper SHA-256 Hasher for Meta user data
- */
 function sha256(input) {
   if (!input) return "";
-  var rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(input).trim().toLowerCase(), Utilities.Charset.UTF_8);
+  var raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(input).trim().toLowerCase(), Utilities.Charset.UTF_8);
   var hex = "";
-  for (var i = 0; i < rawHash.length; i++) {
-    var byteVal = rawHash[i];
-    if (byteVal < 0) byteVal += 256;
-    var byteHex = byteVal.toString(16);
-    if (byteHex.length === 1) byteHex = "0" + byteHex;
-    hex += byteHex;
+  for (var i = 0; i < raw.length; i++) {
+    var b = raw[i] < 0 ? raw[i] + 256 : raw[i];
+    var h = b.toString(16);
+    hex += (h.length === 1 ? "0" : "") + h;
   }
   return hex;
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ status: "online", message: "AUREVA Google Sheet Order Receiver is active and ready!" })).setMimeType(ContentService.MimeType.JSON);
 }
