@@ -428,22 +428,30 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   width: 100%;
   background: linear-gradient(135deg, #0f4c5c 0%, #165b33 100%);
-  color: #ffffff;
-  font-size: 1.15rem;
+  color: #ffffff !important;
+  font-size: clamp(1rem, 3.5vw, 1.25rem);
   font-weight: 800;
-  padding: 1rem 1.75rem;
+  padding: 1.1rem 1.5rem;
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 18px rgba(15, 76, 92, 0.3);
+  box-shadow: 0 8px 20px rgba(15, 76, 92, 0.35);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   text-align: center;
+  text-decoration: none;
+  line-height: 1.3;
 }
 
 .btn-primary-order:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 22px rgba(15, 76, 92, 0.4);
+  box-shadow: 0 12px 24px rgba(15, 76, 92, 0.45);
+}
+
+.btn-cart-icon {
+  font-size: 1.35rem;
+  display: inline-block;
+  animation: pulse-scale 1.8s infinite;
 }
 
 .btn-icon-pulse {
@@ -573,20 +581,22 @@ button {
 }
 
 .product-image-container {
-  background: radial-gradient(circle, #f8fafc 0%, #e2e8f0 100%);
-  padding: 1.25rem;
+  background: #f8fafc;
+  padding: 0;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 250px;
+  height: 290px;
+  overflow: hidden;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .product-card-img {
   width: 100%;
-  max-height: 230px;
-  object-fit: contain;
-  transition: transform 0.3s ease;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
 }
 
 .product-card:hover .product-card-img {
@@ -1564,4 +1574,376 @@ button {
   padding: 0.2rem 0.6rem;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
+}
+
+
+/* --- High-Converting Moroccan COD Optimization --- */
+.price-old {
+  text-decoration: line-through;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.price-per-bottle-pill {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-top: 0.5rem;
+}
+
+.btn-whatsapp-order {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  background: #25D366;
+  color: #ffffff !important;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 0.95rem 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+  text-decoration: none;
+  margin-top: 0.75rem;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.btn-whatsapp-order:hover {
+  background: #1eb954;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+}
+
+.pain-comparison-box {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1.75rem;
+  margin: 2rem 0;
+  border: 1px solid #e2e8f0;
+}
+
+.pain-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .pain-comparison-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pain-col-wrong {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.pain-col-wrong h4 {
+  color: #b91c1c;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pain-col-right {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.pain-col-right h4 {
+  color: #15803d;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.pain-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.whatsapp-fast-bar {
+  background: #f0fdf4;
+  border: 2px dashed #22c55e;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.whatsapp-fast-bar h4 {
+  color: #15803d;
+  font-size: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+
+.whatsapp-fast-bar p {
+  color: #166534;
+  font-size: 0.9rem;
+  margin-bottom: 0.85rem;
+}
+
+
+/* --- High-Converting Moroccan COD Optimization --- */
+.price-old {
+  text-decoration: line-through;
+  color: #94a3b8;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.price-per-bottle-pill {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-top: 0.5rem;
+}
+
+.btn-whatsapp-order {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  background: #25D366;
+  color: #ffffff !important;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 0.95rem 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+  text-decoration: none;
+  margin-top: 0.75rem;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.btn-whatsapp-order:hover {
+  background: #1eb954;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+}
+
+.pain-comparison-box {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1.75rem;
+  margin: 2.5rem 0;
+  border: 1px solid #e2e8f0;
+}
+
+.pain-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .pain-comparison-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pain-col-wrong {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.pain-col-wrong h4 {
+  color: #b91c1c;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pain-col-right {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.pain-col-right h4 {
+  color: #15803d;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.pain-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.whatsapp-fast-bar {
+  background: #f0fdf4;
+  border: 2px dashed #22c55e;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.whatsapp-fast-bar h4 {
+  color: #15803d;
+  font-size: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+
+.whatsapp-fast-bar p {
+  color: #166534;
+  font-size: 0.9rem;
+  margin-bottom: 0.85rem;
+}
+
+/* --- MOBILE-FIRST: SHOW IMAGE FIRST AT TOP --- */
+@media (max-width: 899px) {
+  .hero-grid {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .hero-image-wrap {
+    order: -1 !important;
+    margin-bottom: 1.25rem !important;
+  }
+  .hero-content {
+    order: 2 !important;
+  }
+}
+
+/* Reviews / Testimonials Section */
+.reviews-section {
+  padding: 3.5rem 0;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.review-card {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.review-stars {
+  color: #f59e0b;
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+}
+
+.review-text {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #334155;
+  margin-bottom: 1.25rem;
+}
+
+.review-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 0.75rem;
+}
+
+.author-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.author-info h5 {
+  font-size: 0.95rem;
+  color: #0f172a;
+  margin: 0;
+}
+
+.author-info small {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-right: 0.35rem;
 }
